@@ -4,17 +4,14 @@ import { HomePage } from '../pages/HomePage';
 const oldSentence = '新しい文';
 
 test.describe('History Feature', () => {
-    test.beforeEach(async ({ page }) => {
+    test.beforeEach(async ({ page, mockData }) => {
         const initialHistory = [
             {
                 id: 'existing-id',
                 timestamp: Date.now(),
                 sentence: oldSentence,
                 context: 'Some context',
-                data: {
-                    original: oldSentence,
-                    terms: []
-                }
+                data: mockData.data
             }
         ];
 
