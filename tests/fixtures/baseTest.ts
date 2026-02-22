@@ -2,7 +2,7 @@ import { test as base } from '@playwright/test';
 import defaultMockResponse from './analyze_response.json' with { type: 'json' };
 
 export type TestOptions = {
-    mockData: any;
+    mockData: typeof defaultMockResponse;
 };
 
 export const test = base.extend<TestOptions>({
