@@ -1,0 +1,83 @@
+{
+    "success": true,
+    "inputSentence": "そして次の曲が始まる",
+    "displayedSentence": "そして次の曲が始まる",
+    "context": "",
+    "data": {
+        "original": "そして次の曲が始まる",
+        "terms": [
+            {
+                "kanji": "そして",
+                "reading": "そして",
+                "definition": "and; and then; thus; and now",
+                "partOfSpeech": "conjunction",
+                "furigana": [
+                    {
+                        "base": "そして"
+                    }
+                ]
+            },
+            {
+                "kanji": "次",
+                "reading": "つぎ",
+                "definition": "next; following; subsequent",
+                "partOfSpeech": "noun",
+                "furigana": [
+                    {
+                        "base": "次",
+                        "furigana": "つぎ"
+                    }
+                ]
+            },
+            {
+                "kanji": "の",
+                "reading": "の",
+                "definition": "indicates possessive",
+                "partOfSpeech": "particle",
+                "furigana": [
+                    {
+                        "base": "の"
+                    }
+                ]
+            },
+            {
+                "kanji": "曲",
+                "reading": "きょく",
+                "definition": "piece of music; song; track; melody; tune",
+                "partOfSpeech": "noun",
+                "furigana": [
+                    {
+                        "base": "曲",
+                        "furigana": "きょく"
+                    }
+                ]
+            },
+            {
+                "kanji": "が",
+                "reading": "が",
+                "definition": "indicates sentence subject (occasionally object)",
+                "partOfSpeech": "particle",
+                "furigana": [
+                    {
+                        "base": "が"
+                    }
+                ]
+            },
+            {
+                "kanji": "始まる",
+                "reading": "はじまる",
+                "definition": "to begin; to start; to commence",
+                "partOfSpeech": "verb",
+                "furigana": [
+                    {
+                        "base": "始",
+                        "furigana": "はじ"
+                    },
+                    {
+                        "base": "まる"
+                    }
+                ]
+            }
+        ]
+    }
+}
