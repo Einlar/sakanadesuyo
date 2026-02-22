@@ -86,4 +86,3 @@ For more detailed information, check out:
 
 - [Design System](docs/design.md)
 - [Deployment Guide](docs/deployment.md)
-- [GitHub Actions Setup](docs/github-actions-setup.md)
