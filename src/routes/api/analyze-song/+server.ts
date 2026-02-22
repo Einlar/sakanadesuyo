@@ -1,6 +1,7 @@
 import { analyzeSongLines } from '$lib/server/openrouter';
 import { limiter } from '$lib/server/limiter';
 import { analyzeLogger as log } from '$lib/server/logger';
+import { validateModel } from '$lib/server/validation';
 import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
@@ -20,6 +21,8 @@ export const POST: RequestHandler = async (event) => {
     const { request } = event;
     const body = await request.json();
     const { fullSong, lines, batchIndex, model } = body;
+
+    validateModel(model);
 
     // Validation
     if (!fullSong || typeof fullSong !== 'string') {

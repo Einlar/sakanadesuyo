@@ -1,40 +1,18 @@
-import { describe, it, expect, mock } from 'bun:test';
+import { describe, it, expect, mock, beforeAll } from 'bun:test';
 import { POST } from '../../src/routes/api/analyze/+server';
-import {
-    ALLOWED_MODELS,
-    DEFAULT_ANALYSIS_MODEL
-} from '../../src/lib/constants';
+import { DEFAULT_ANALYSIS_MODEL } from '../../src/lib/constants';
 
-const mockAnalyzeSentence = mock(() => Promise.resolve(new ReadableStream()));
-mock.module('$lib/server/openrouter', () => ({
-    analyzeSentence: mockAnalyzeSentence
-}));
+// Mocks
+import { analyzeSentence } from '../mocks/openrouter';
 
-const mockIsLimited = mock(() => Promise.resolve(false));
-mock.module('$lib/server/limiter', () => ({
-    limiter: {
-        isLimited: mockIsLimited
-    }
-}));
+// We need to mock validation to ensure it passes or fails as expected
+// But since validation logic imports a JSON file, we might want to test it implicitly
+// by letting it run. The JSON file exists in src/lib/data/models.json.
+// However, our mocks might need adjustment if we want to isolate units.
+// Let's try to let validation run for real, as it's a pure function dependent on static data.
 
-const mockLogger = {
-    info: mock(() => {}),
-    error: mock(() => {}),
-    debug: mock(() => {}),
-    warn: mock(() => {})
-};
-mock.module('$lib/server/logger', () => ({
-    analyzeLogger: mockLogger
-}));
-
-mock.module('@sveltejs/kit', () => ({
-    error: (status: number, message: string) => {
-        const err = new Error(message);
-        (err as any).status = status;
-        (err as any).body = { message };
-        throw err;
-    }
-}));
+// Ensure models.json is readable or mocked if needed.
+// Since we run in Bun, JSON imports work.
 
 describe('POST /api/analyze', () => {
     const createEvent = (body: any) =>
@@ -50,15 +28,15 @@ describe('POST /api/analyze', () => {
             }
         }) as any;
 
-    it('should accept valid model', async () => {
-        mockAnalyzeSentence.mockClear();
+    it('should accept valid model (default)', async () => {
+        analyzeSentence.mockClear();
         const body = {
             sentence: 'test sentence',
             model: DEFAULT_ANALYSIS_MODEL
         };
         const response = await POST(createEvent(body));
         expect(response).toBeInstanceOf(Response);
-        expect(mockAnalyzeSentence).toHaveBeenCalledWith(
+        expect(analyzeSentence).toHaveBeenCalledWith(
             'test sentence',
             undefined,
             true,
@@ -66,14 +44,30 @@ describe('POST /api/analyze', () => {
         );
     });
 
+    it('should accept valid model from json (e.g. gpt-5-mini)', async () => {
+        analyzeSentence.mockClear();
+        const body = {
+            sentence: 'test sentence',
+            model: 'openai/gpt-5-mini'
+        };
+        const response = await POST(createEvent(body));
+        expect(response).toBeInstanceOf(Response);
+        expect(analyzeSentence).toHaveBeenCalledWith(
+            'test sentence',
+            undefined,
+            true,
+            'openai/gpt-5-mini'
+        );
+    });
+
     it('should accept request without model (use default)', async () => {
-        mockAnalyzeSentence.mockClear();
+        analyzeSentence.mockClear();
         const body = {
             sentence: 'test sentence'
         };
         const response = await POST(createEvent(body));
         expect(response).toBeInstanceOf(Response);
-        expect(mockAnalyzeSentence).toHaveBeenCalledWith(
+        expect(analyzeSentence).toHaveBeenCalledWith(
             'test sentence',
             undefined,
             true,

@@ -1,7 +1,7 @@
 import { analyzeSentence } from '$lib/server/openrouter';
 import { limiter } from '$lib/server/limiter';
 import { analyzeLogger as log } from '$lib/server/logger';
-import { ALLOWED_MODELS } from '$lib/constants';
+import { validateModel } from '$lib/server/validation';
 import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
@@ -18,9 +18,7 @@ export const POST: RequestHandler = async (event) => {
     const body = await request.json();
     const { sentence, context, model } = body;
 
-    if (model && !ALLOWED_MODELS.includes(model)) {
-        throw error(400, 'Invalid model selected');
-    }
+    validateModel(model);
 
     if (!sentence) {
         throw error(400, 'Sentence is required');
