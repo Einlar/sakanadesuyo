@@ -4,21 +4,24 @@ import { HomePage } from '../pages/HomePage';
 const oldSentence = '新しい文';
 
 test.describe('History Feature', () => {
-    test.beforeEach(async ({ page, mockData }) => {
+    test.beforeEach(async ({ page }) => {
         const initialHistory = [
             {
                 id: 'existing-id',
                 timestamp: Date.now(),
                 sentence: oldSentence,
                 context: 'Some context',
-                data: mockData.data
+                data: {
+                    original: oldSentence,
+                    terms: []
+                }
             }
         ];
 
-        await page.addInitScript((storageCallback) => {
+        await page.addInitScript((history) => {
             localStorage.setItem(
                 'sakanadesuyo_history',
-                JSON.stringify(storageCallback)
+                JSON.stringify(history)
             );
         }, initialHistory);
     });
