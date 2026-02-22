@@ -1,9 +1,26 @@
 import { describe, it, expect, mock, beforeAll } from 'bun:test';
-import { POST } from '../../src/routes/api/analyze-song/+server';
-import { DEFAULT_ANALYSIS_MODEL } from '../../src/lib/constants';
 
 // Mocks
-import { analyzeSongLines } from '../mocks/openrouter';
+const mockOpenRouter = await import('../mocks/openrouter');
+const mockLimiter = await import('../mocks/limiter');
+const mockLogger = await import('../mocks/logger');
+const mockKit = await import('../mocks/sveltejs-kit');
+const mockEnv = await import('../mocks/env');
+const mockAppEnv = await import('../mocks/app-env');
+
+// Mock modules
+mock.module('$lib/server/openrouter', () => ({
+    analyzeSongLines: mockOpenRouter.analyzeSongLines
+}));
+mock.module('$lib/server/limiter', () => mockLimiter);
+mock.module('$lib/server/logger', () => mockLogger);
+mock.module('@sveltejs/kit', () => mockKit);
+mock.module('$env/dynamic/private', () => mockEnv);
+mock.module('$app/environment', () => mockAppEnv);
+
+// Import SUT after mocking
+import { POST } from '../../src/routes/api/analyze-song/+server';
+import { DEFAULT_ANALYSIS_MODEL } from '../../src/lib/constants';
 
 describe('POST /api/analyze-song', () => {
     const createEvent = (body: any) =>
@@ -20,7 +37,7 @@ describe('POST /api/analyze-song', () => {
         }) as any;
 
     it('should accept valid model from json', async () => {
-        analyzeSongLines.mockClear();
+        mockOpenRouter.analyzeSongLines.mockClear();
         const body = {
             fullSong: 'test full song',
             lines: ['line 1', 'line 2'],
@@ -28,7 +45,7 @@ describe('POST /api/analyze-song', () => {
         };
         const response = await POST(createEvent(body));
         expect(response).toBeInstanceOf(Response);
-        expect(analyzeSongLines).toHaveBeenCalledWith(
+        expect(mockOpenRouter.analyzeSongLines).toHaveBeenCalledWith(
             'test full song',
             ['line 1', 'line 2'],
             true,

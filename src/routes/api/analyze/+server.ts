@@ -8,7 +8,7 @@ import type { RequestHandler } from './$types';
 export const POST: RequestHandler = async (event) => {
     // Rate limiting logic
     if (await limiter.isLimited(event)) {
-        throw error(
+        error(
             429,
             "Whoa there fast fingers! The AI needs a coffee break. You've hit your limit. Please come back later!"
         );
@@ -21,11 +21,11 @@ export const POST: RequestHandler = async (event) => {
     validateModel(model);
 
     if (!sentence) {
-        throw error(400, 'Sentence is required');
+        error(400, 'Sentence is required');
     }
 
     if (sentence.length > 500) {
-        throw error(400, 'Sentence is too long');
+        error(400, 'Sentence is too long');
     }
 
     try {
@@ -73,6 +73,6 @@ export const POST: RequestHandler = async (event) => {
         if (e && typeof e === 'object' && 'status' in e && 'body' in e) {
             throw e;
         }
-        throw error(500, `Internal Server Error: ${message}`);
+        error(500, `Internal Server Error: ${message}`);
     }
 };

@@ -13,6 +13,6 @@ export function validateModel(model: unknown): void {
     if (!model) return;
 
     if (typeof model !== 'string' || !ALLOWED_MODEL_IDS.has(model)) {
-        throw error(400, 'Invalid model selected');
+        error(400, 'Invalid model selected');
     }
 }
