@@ -33,10 +33,15 @@ test.describe('History Feature', () => {
         const home = new HomePage(page);
         await home.goto();
 
+        // Wait a bit for Svelte hydration and history.init() to pick up localStorage
+        await page.waitForTimeout(500);
+
         // 1. Open history and verify existing item
         await home.openHistory();
         const items = await home.getHistoryItems();
-        await expect(items).toHaveCount(1);
+
+        // Wait for the list to be populated if it's not immediate
+        await expect(items).toHaveCount(1, { timeout: 10000 });
         await expect(items.first()).toHaveText(oldSentence);
         await home.closeHistory(); // Close it
 
