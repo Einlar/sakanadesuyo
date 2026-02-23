@@ -1,6 +1,7 @@
 import { analyzeSongLines } from '$lib/server/openrouter';
 import { limiter } from '$lib/server/limiter';
 import { analyzeLogger as log } from '$lib/server/logger';
+import { validateModel } from '$lib/server/validation';
 import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
@@ -11,7 +12,7 @@ import type { RequestHandler } from './$types';
 export const POST: RequestHandler = async (event) => {
     // Rate limiting
     if (await limiter.isLimited(event)) {
-        throw error(
+        error(
             429,
             "You're analyzing too fast! Please wait a moment before continuing."
         );
@@ -21,23 +22,25 @@ export const POST: RequestHandler = async (event) => {
     const body = await request.json();
     const { fullSong, lines, batchIndex, model } = body;
 
+    validateModel(model);
+
     // Validation
     if (!fullSong || typeof fullSong !== 'string') {
-        throw error(400, 'fullSong is required and must be a string');
+        error(400, 'fullSong is required and must be a string');
     }
 
     if (!Array.isArray(lines) || lines.length === 0) {
-        throw error(400, 'lines must be a non-empty array');
+        error(400, 'lines must be a non-empty array');
     }
 
     if (lines.length > 10) {
-        throw error(400, 'Maximum 10 lines per batch');
+        error(400, 'Maximum 10 lines per batch');
     }
 
     // Check total input size (full song + lines)
     const totalChars = fullSong.length + lines.join('').length;
     if (totalChars > 10000) {
-        throw error(400, 'Total input too large');
+        error(400, 'Total input too large');
     }
 
     try {
@@ -82,6 +85,6 @@ export const POST: RequestHandler = async (event) => {
         if (e && typeof e === 'object' && 'status' in e && 'body' in e) {
             throw e;
         }
-        throw error(500, `Internal Server Error: ${message}`);
+        error(500, `Internal Server Error: ${message}`);
     }
 };
