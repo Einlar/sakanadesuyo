@@ -86,7 +86,7 @@ export interface KaraokeSong {
     updatedAt: Date;
 }
 
-const DB_NAME = 'sakanadesuyo-karaoke';
+const DB_NAME = 'wakarimasen-karaoke';
 const DB_VERSION = 2; // Incremented for schema change
 const STORE_NAME = 'songs';
 

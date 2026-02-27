@@ -11,7 +11,7 @@ export interface NotebookDocument {
     updatedAt: Date;
 }
 
-const DB_NAME = 'sakanadesuyo-notebook';
+const DB_NAME = 'wakarimasen-notebook';
 const DB_VERSION = 1;
 const STORE_NAME = 'documents';
 
