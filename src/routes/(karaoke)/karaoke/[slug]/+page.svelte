@@ -445,7 +445,7 @@
                         />
                     {:else}
                         <div
-                            class="flex-1 overflow-y-auto scroll-smooth py-6 pr-6 pl-20 [direction:rtl]"
+                            class="flex-1 overflow-y-auto py-6 pr-6 pl-20 [direction:rtl]"
                         >
                             <div
                                 class="mx-auto flex max-w-3xl flex-col gap-6 pb-20 text-center [direction:ltr]"

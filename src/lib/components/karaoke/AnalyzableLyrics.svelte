@@ -43,12 +43,44 @@
         return getSyncedIntervals(timings);
     });
 
+    // Match the CSS transition duration (duration-300 = 300ms) plus one
+    // animation frame (~16ms) for the browser paint cycle.
+    const HIGHLIGHT_TRANSITION_MS = 300;
+    const PAINT_FRAME_MS = 16;
+    const LOOKAHEAD_S = (HIGHLIGHT_TRANSITION_MS + PAINT_FRAME_MS) / 1000;
+
+    // When seeking, disable lookahead so the highlight snaps to the correct line.
+    let isSeeking = $state(false);
+    let lastCurrentTime = 0;
+
+    // Detect seeks: a jump larger than the lookahead window is a seek, not normal playback.
+    $effect.pre(() => {
+        const delta = Math.abs(currentTime - lastCurrentTime);
+        if (delta > LOOKAHEAD_S) {
+            isSeeking = true;
+        }
+        lastCurrentTime = currentTime;
+    });
+
     // Find active line efficiently using binary search (O(log N))
+    // We look ahead by the transition duration so the highlight is fully
+    // visible by the time the line actually starts.
     let activeLineIndex = $derived.by(() => {
         if (!currentTime && currentTime !== 0) return -1;
         if (!hasSyncData) return -1;
 
-        return findActiveLineIndex(syncedLines, currentTime);
+        const lookahead = isSeeking ? 0 : LOOKAHEAD_S;
+        return findActiveLineIndex(syncedLines, currentTime + lookahead);
+    });
+
+    // Re-enable lookahead after the seek settles (one transition duration later).
+    $effect(() => {
+        if (isSeeking) {
+            const timer = setTimeout(() => {
+                isSeeking = false;
+            }, HIGHLIGHT_TRANSITION_MS);
+            return () => clearTimeout(timer);
+        }
     });
 
     $effect(() => {
@@ -57,7 +89,10 @@
                 `[data-line-index="${activeLineIndex}"]`
             );
             if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                el.scrollIntoView({
+                    behavior: isSeeking ? 'instant' : 'smooth',
+                    block: 'center'
+                });
             }
         }
     });
@@ -126,7 +161,7 @@
     {#each sentences as sentence, lineIndex}
         <div
             class={[
-                'group relative -mx-4 rounded-lg px-4 py-2 text-xl leading-loose transition-all duration-300 md:text-2xl',
+                'group relative -mx-4 rounded-lg px-4 py-2 text-xl leading-loose transition-colors duration-300 md:text-2xl',
                 activeLineIndex === lineIndex
                     ? 'bg-[var(--color-primary)]/10'
                     : ''
