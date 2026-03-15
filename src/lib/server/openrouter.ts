@@ -52,13 +52,15 @@ async function makeOpenRouterRequest<T>(
         if (stream) {
             const streamResponse = await openRouter.chat.send(
                 {
-                    model,
-                    messages,
-                    temperature,
-                    maxTokens,
-                    stream: true,
-                    provider: PROVIDER_SETTINGS,
-                    responseFormat
+                    chatGenerationParams: {
+                        model,
+                        messages,
+                        temperature,
+                        maxTokens,
+                        stream: true,
+                        provider: PROVIDER_SETTINGS,
+                        responseFormat
+                    }
                 },
                 { headers: HEADERS }
             );
@@ -128,14 +130,16 @@ async function makeOpenRouterRequest<T>(
         } else {
             const response = await openRouter.chat.send(
                 {
-                    model,
-                    messages,
-                    temperature,
-                    maxTokens,
-                    stream: false,
-                    provider: PROVIDER_SETTINGS,
-                    responseFormat,
-                    plugins: [{ id: 'response-healing' }]
+                    chatGenerationParams: {
+                        model,
+                        messages,
+                        temperature,
+                        maxTokens,
+                        stream: false,
+                        provider: PROVIDER_SETTINGS,
+                        responseFormat,
+                        plugins: [{ id: 'response-healing' }]
+                    }
                 },
                 { headers: HEADERS }
             );
