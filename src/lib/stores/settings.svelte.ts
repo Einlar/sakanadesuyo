@@ -26,6 +26,11 @@ function createSettingsStore() {
         true
     );
 
+    const dictionaryProviderState = new PersistentState<'jisho' | 'jpdb'>(
+        'dictionary_provider',
+        'jisho'
+    );
+
     return {
         get model() {
             return modelState.current;
@@ -38,6 +43,12 @@ function createSettingsStore() {
         },
         set showFurigana(value: boolean) {
             showFuriganaState.current = value;
+        },
+        get dictionaryProvider() {
+            return dictionaryProviderState.current;
+        },
+        set dictionaryProvider(value: 'jisho' | 'jpdb') {
+            dictionaryProviderState.current = value;
         },
         /** Toggles the furigana visibility setting. */
         toggleFurigana() {

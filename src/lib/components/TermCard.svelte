@@ -3,6 +3,7 @@
 
     import FuriganaText from './FuriganaText.svelte';
     import ExternalLinkIcon from './icons/ExternalLinkIcon.svelte';
+    import { settings } from '$lib/stores/settings.svelte';
 
     interface Props {
         term: AnalyzedTerm;
@@ -13,10 +14,14 @@
 
     let { term, isHighlighted = false, actions }: Props = $props();
 
-    // Generate Jisho search URL
-    function getJishoUrl(term: string): string {
+    function getDictionaryUrl(term: string): string {
+        if (settings.dictionaryProvider === 'jpdb') {
+            return `https://jpdb.io/search?q=${encodeURIComponent(term)}`;
+        }
         return `https://jisho.org/search/${encodeURIComponent(term)}`;
     }
+
+    const dictionaryLabel = $derived(settings.dictionaryProvider === 'jpdb' ? 'JPDB' : 'Jisho');
 
     let containerWidth = $state(0);
     let fullTagWidth = $state(0);
@@ -52,12 +57,12 @@
         <div class="flex shrink-0 items-center gap-2">
             {@render actions?.()}
             <a
-                href={getJishoUrl(term.kanji)}
+                href={getDictionaryUrl(term.kanji)}
                 target="_blank"
                 rel="noopener noreferrer"
                 class="text-[var(--color-text-muted)] transition-colors duration-200 group-data-[highlighted=true]:text-teal-700 hover:text-[var(--color-primary)] dark:group-data-[highlighted=true]:text-teal-300"
-                title="Look up on Jisho"
-                aria-label={`Look up ${term.kanji} on Jisho`}
+                title={`Look up on ${dictionaryLabel}`}
+                aria-label={`Look up ${term.kanji} on ${dictionaryLabel}`}
             >
                 <ExternalLinkIcon size={18} />
             </a>

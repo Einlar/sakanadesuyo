@@ -2,6 +2,7 @@
     import SettingsIcon from '$lib/components/icons/SettingsIcon.svelte';
     import XIcon from '$lib/components/icons/XIcon.svelte';
     import ModelSelector from './ModelSelector.svelte';
+    import DictionarySelector from './DictionarySelector.svelte';
 
     let dialog: HTMLDialogElement;
 
@@ -60,8 +61,9 @@
         </div>
 
         <!-- Content -->
-        <div class="px-6 py-6">
+        <div class="space-y-6 px-6 py-6">
             <ModelSelector />
+            <DictionarySelector />
         </div>
     </div>
 </dialog>
