@@ -1,5 +1,6 @@
 <script lang="ts">
-    import { onMount, tick } from 'svelte';
+    import { PersistentState } from '$lib/utils/storage.svelte';
+    import { onMount } from 'svelte';
 
     type Props = {
         src: string;
@@ -15,7 +16,7 @@
 
     let audio: HTMLAudioElement;
     let duration = $state(0);
-    let volume = $state(0.8);
+    const volumeState = new PersistentState<number>('karaoke_volume', 0.8);
     let isDraggingVolume = $state(false);
     let volumeControl: HTMLDivElement;
 
@@ -85,9 +86,9 @@
         const rect = target.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const newVolume = Math.max(0, Math.min(1, x / rect.width));
-        volume = newVolume;
+        volumeState.current = newVolume;
         if (audio) {
-            audio.volume = volume;
+            audio.volume = volumeState.current;
         }
     }
 
@@ -111,7 +112,7 @@
         const rect = volumeControl.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const newVolume = Math.max(0, Math.min(1, x / rect.width));
-        volume = newVolume;
+        volumeState.current = newVolume;
         if (audio) {
             audio.volume = newVolume;
         }
@@ -129,7 +130,7 @@
             const rect = volumeControl.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const v = Math.max(0, Math.min(1, x / rect.width));
-            volume = v;
+            volumeState.current = v;
             if (audio) audio.volume = v;
         }
         window.addEventListener('mousemove', handleGlobalVolumeDrag);
@@ -174,7 +175,7 @@
 
     onMount(() => {
         if (audio) {
-            audio.volume = volume;
+            audio.volume = volumeState.current;
         }
     });
 </script>
@@ -260,13 +261,13 @@
                 <!-- Foreground Triangle (Primary Color, Clipped) -->
                 <div
                     class="absolute inset-0 overflow-hidden"
-                    style="width: {volume * 100}%"
+                    style="width: {volumeState.current * 100}%"
                 >
                     <svg
                         class="h-full w-[calc(100%/var(--vol))] min-w-full text-[var(--color-primary)]"
                         viewBox="0 0 100 100"
                         preserveAspectRatio="none"
-                        style="--vol: {volume}"
+                        style="--vol: {volumeState.current}"
                     >
                         <path
                             d="M0 100 L100 0 L100 100 Z"
