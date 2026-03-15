@@ -1,5 +1,3 @@
-import type { SentenceAnalysis } from '$lib/types';
-
 /**
  * Represents a notebook document stored in IndexedDB
  */
@@ -145,7 +143,7 @@ function createNotebookStore() {
         if (index === -1) return;
 
         // Use $state.snapshot() to get a plain object (not a Proxy) for IndexedDB storage
-        let updated = {
+        const updated = {
             ...$state.snapshot(documents[index]),
             ...updates,
             updatedAt: new Date()
@@ -181,6 +179,41 @@ function createNotebookStore() {
     }
 
     /**
+     * Upsert documents from a sync operation.
+     * Preserves the original updatedAt (does not generate a new one).
+     * Only applies items that are newer than what's already stored.
+     */
+    async function upsertDocuments(incoming: NotebookDocument[]) {
+        if (!db || incoming.length === 0) return;
+
+        const transaction = db.transaction(STORE_NAME, 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+
+        for (const doc of incoming) {
+            const existing = documents.find((d) => d.id === doc.id);
+            if (existing && existing.updatedAt >= doc.updatedAt) continue;
+
+            const snapshot = $state.snapshot(doc) as NotebookDocument;
+            store.put(snapshot);
+
+            const idx = documents.findIndex((d) => d.id === doc.id);
+            if (idx >= 0) {
+                documents[idx] = doc;
+            } else {
+                documents = [doc, ...documents];
+            }
+        }
+
+        // Re-sort by updatedAt descending
+        documents = [...documents].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+
+        return new Promise<void>((resolve, reject) => {
+            transaction.oncomplete = () => resolve();
+            transaction.onerror = () => reject(transaction.error);
+        });
+    }
+
+    /**
      * Search documents by title or content
      */
     function searchDocuments(query: string): NotebookDocument[] {
@@ -206,7 +239,8 @@ function createNotebookStore() {
         updateDocument,
         deleteDocument,
         getDocument,
-        searchDocuments
+        searchDocuments,
+        upsertDocuments
     };
 }
 

@@ -311,6 +311,47 @@ function createKaraokeStore() {
     }
 
     /**
+     * Upsert songs from a sync operation.
+     * Preserves the original updatedAt (does not generate a new one).
+     * Only applies items that are newer than what's already stored.
+     */
+    async function upsertSongs(incoming: KaraokeSong[]) {
+        if (!db || incoming.length === 0) return;
+
+        const transaction = db.transaction(STORE_NAME, 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+
+        for (const song of incoming) {
+            const existing = songs.find((s) => s.id === song.id);
+            if (existing && existing.updatedAt >= song.updatedAt) continue;
+
+            // Preserve existing audioBlob if incoming has none
+            const merged = {
+                ...song,
+                audioBlob: existing?.audioBlob ?? song.audioBlob
+            };
+
+            const snapshot = $state.snapshot(merged) as KaraokeSong;
+            store.put(snapshot);
+
+            const idx = songs.findIndex((s) => s.id === song.id);
+            if (idx >= 0) {
+                songs[idx] = merged;
+            } else {
+                songs = [merged, ...songs];
+            }
+        }
+
+        // Re-sort by updatedAt descending
+        songs = [...songs].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+
+        return new Promise<void>((resolve, reject) => {
+            transaction.oncomplete = () => resolve();
+            transaction.onerror = () => reject(transaction.error);
+        });
+    }
+
+    /**
      * Search songs by title or artist
      */
     function searchSongs(query: string): KaraokeSong[] {
@@ -337,7 +378,8 @@ function createKaraokeStore() {
         deleteSong,
         getSong,
         getSongBySlug,
-        searchSongs
+        searchSongs,
+        upsertSongs
     };
 }
 
