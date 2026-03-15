@@ -21,31 +21,39 @@
         onClose: () => void;
     }
 
-    let props: Props = $props();
+    let {
+        songId,
+        currentTitle,
+        currentArtist,
+        currentCoverUrl,
+        currentLyrics,
+        sentences,
+        onClose
+    }: Props = $props();
 
     let dialog: HTMLDialogElement;
     let fileInput: HTMLInputElement;
 
     // Editable state
-    let title = $state(props.currentTitle);
-    let artist = $state(props.currentArtist);
-    let lyrics = $state(props.currentLyrics);
-    let coverUrl = $state(props.currentCoverUrl);
+    let title = $state(currentTitle);
+    let artist = $state(currentArtist);
+    let lyrics = $state(currentLyrics);
+    let coverUrl = $state(currentCoverUrl);
     let selectedFile = $state<File | null>(null);
     let previewUrl = $state<string | null>(null);
     let isLoading = $state(false);
     let showResetConfirmation = $state(false);
 
     // check if any sentence has analysis
-    let hasAnalysis = $derived(props.sentences.some((s) => s.analysis));
+    let hasAnalysis = $derived(sentences.some((s) => s.analysis));
 
     // Track if any changes were made
     let hasChanges = $derived(
-        title.trim() !== props.currentTitle ||
-            artist.trim() !== props.currentArtist ||
-            lyrics.trim() !== props.currentLyrics ||
+        title.trim() !== currentTitle ||
+            artist.trim() !== currentArtist ||
+            lyrics.trim() !== currentLyrics ||
             selectedFile !== null ||
-            (coverUrl === undefined && props.currentCoverUrl !== undefined)
+            (coverUrl === undefined && currentCoverUrl !== undefined)
     );
 
     $effect(() => {
@@ -116,7 +124,7 @@
         }
 
         // Check for analysis reset warning
-        const lyricsChanged = lyrics.trim() !== props.currentLyrics;
+        const lyricsChanged = lyrics.trim() !== currentLyrics;
         if (lyricsChanged && hasAnalysis && !showResetConfirmation) {
             showResetConfirmation = true;
             return;
@@ -132,16 +140,16 @@
                 sentences?: KaraokeSentence[];
             } = {};
 
-            if (title.trim() !== props.currentTitle) {
+            if (title.trim() !== currentTitle) {
                 updates.title = title.trim();
             }
-            if (artist.trim() !== props.currentArtist) {
+            if (artist.trim() !== currentArtist) {
                 updates.artist = artist.trim();
             }
             if (selectedFile) {
                 // Convert image to data URL for persistent storage
                 updates.coverUrl = await fileToDataUrl(selectedFile);
-            } else if (coverUrl === undefined && props.currentCoverUrl) {
+            } else if (coverUrl === undefined && currentCoverUrl) {
                 // Remove existing cover
                 updates.coverUrl = undefined;
             }
@@ -156,7 +164,7 @@
                     .map((text) => ({ text }));
             }
 
-            await karaokeStore.updateSong(props.songId, updates);
+            await karaokeStore.updateSong(songId, updates);
             closeDialog();
         } finally {
             isLoading = false;
@@ -191,7 +199,7 @@
 <dialog
     bind:this={dialog}
     class="m-auto w-full max-w-md flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] p-0 text-left shadow-2xl transition-all duration-300 backdrop:bg-black/50 backdrop:backdrop-blur-sm open:flex"
-    onclose={props.onClose}
+    onclose={onClose}
     onclick={handleBackdropClick}
 >
     <!-- Header -->
