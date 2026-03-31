@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls /home/fmanzali/Projects/sakanadesuyo/src/routes/\\\\\\(karaoke\\\\\\)/karaoke/)",
+      "Bash(ls /home/fmanzali/Projects/sakanadesuyo/src/routes/\\\\\\(notebook\\\\\\)/notebook/)",
+      "Bash(bun run:*)",
+      "Bash(git add:*)",
+      "Skill(commit-commands:commit-push-pr)",
+      "Skill(commit-commands:commit-push-pr:*)",
+      "Bash(pnpm outdated:*)"
+    ]
+  }
+}
