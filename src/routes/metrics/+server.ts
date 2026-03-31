@@ -3,14 +3,10 @@ import type { RequestHandler } from './$types';
 import { env } from '$env/dynamic/private';
 
 export const GET: RequestHandler = async ({ request }) => {
-    // Optional security: if METRICS_TOKEN is set, require it
-    if (env.METRICS_TOKEN) {
-        const authHeader = request.headers.get('Authorization');
-        // Check for "Bearer <token>"
-        if (!authHeader || authHeader !== `Bearer ${env.METRICS_TOKEN}`) {
-            return new Response('Unauthorized', { status: 401 });
-        }
-    }
+    const token = env.METRICS_TOKEN;
+    if (!token) return new Response('Metrics disabled', { status: 403 });
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader !== `Bearer ${token}`) return new Response('Unauthorized', { status: 401 });
 
     const headers = {
         'Content-Type': register.contentType
