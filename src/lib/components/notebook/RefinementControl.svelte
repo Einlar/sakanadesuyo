@@ -31,7 +31,12 @@
         };
 
         try {
-            const generator = api.analyze(refineSentence, refineContext, undefined, settings.model);
+            const generator = api.analyze(
+                refineSentence,
+                refineContext,
+                undefined,
+                settings.model
+            );
 
             for await (const terms of generator) {
                 currentTerms = terms;

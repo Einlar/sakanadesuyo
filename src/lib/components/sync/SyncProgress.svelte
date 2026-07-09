@@ -14,6 +14,8 @@
     </div>
     <div class="flex justify-between">
         <span>Receiving</span>
-        <span class="font-medium text-[var(--color-text)]">{received} items</span>
+        <span class="font-medium text-[var(--color-text)]"
+            >{received} items</span
+        >
     </div>
 </div>

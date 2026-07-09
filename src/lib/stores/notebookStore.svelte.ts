@@ -1,3 +1,5 @@
+import { createIdbCollection, generateId } from './idbCollection.svelte';
+
 /**
  * Represents a notebook document stored in IndexedDB
  */
@@ -9,110 +11,23 @@ export interface NotebookDocument {
     updatedAt: Date;
 }
 
-const DB_NAME = 'wakarimasen-notebook';
-const DB_VERSION = 1;
-const STORE_NAME = 'documents';
-
-/**
- * Opens the IndexedDB database
- */
-function openDB(): Promise<IDBDatabase> {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-        request.onerror = () => reject(request.error);
-        request.onsuccess = () => resolve(request.result);
-
-        request.onupgradeneeded = (event) => {
-            const db = (event.target as IDBOpenDBRequest).result;
-            if (!db.objectStoreNames.contains(STORE_NAME)) {
-                const store = db.createObjectStore(STORE_NAME, {
-                    keyPath: 'id'
-                });
-                store.createIndex('updatedAt', 'updatedAt', { unique: false });
-            }
-        };
-    });
-}
-
-/**
- * Generates a unique ID for documents
- */
-function generateId(): string {
-    return `doc_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-}
-
 /**
  * Creates the notebook store with Svelte 5 runes
  */
 function createNotebookStore() {
-    let documents = $state<NotebookDocument[]>([]);
-    let initialized = $state(false);
-    let db: IDBDatabase | null = null;
-
-    /**
-     * Initialize the store by loading documents from IndexedDB
-     */
-    async function init() {
-        if (initialized) return;
-
-        try {
-            db = await openDB();
-            await loadDocuments();
-            initialized = true;
-        } catch (error) {
-            console.error('Failed to initialize notebook store:', error);
+    const collection = createIdbCollection<NotebookDocument>({
+        dbName: 'wakarimasen-notebook',
+        dbVersion: 1,
+        storeName: 'documents',
+        upgrade(db) {
+            if (!db.objectStoreNames.contains('documents')) {
+                const store = db.createObjectStore('documents', {
+                    keyPath: 'id'
+                });
+                store.createIndex('updatedAt', 'updatedAt', { unique: false });
+            }
         }
-    }
-
-    /**
-     * Load all documents from IndexedDB
-     */
-    async function loadDocuments() {
-        if (!db) return;
-
-        return new Promise<void>((resolve, reject) => {
-            const transaction = db!.transaction(STORE_NAME, 'readonly');
-            const store = transaction.objectStore(STORE_NAME);
-            const index = store.index('updatedAt');
-            const request = index.openCursor(null, 'prev'); // newest first
-
-            const results: NotebookDocument[] = [];
-
-            request.onsuccess = (event) => {
-                const cursor = (event.target as IDBRequest).result;
-                if (cursor) {
-                    const doc = cursor.value;
-                    // Convert date strings back to Date objects
-                    doc.createdAt = new Date(doc.createdAt);
-                    doc.updatedAt = new Date(doc.updatedAt);
-                    results.push(doc);
-                    cursor.continue();
-                } else {
-                    documents = results;
-                    resolve();
-                }
-            };
-
-            request.onerror = () => reject(request.error);
-        });
-    }
-
-    /**
-     * Save a document to IndexedDB
-     */
-    async function saveDocument(doc: NotebookDocument) {
-        if (!db) return;
-
-        return new Promise<void>((resolve, reject) => {
-            const transaction = db!.transaction(STORE_NAME, 'readwrite');
-            const store = transaction.objectStore(STORE_NAME);
-            const request = store.put(doc);
-
-            request.onsuccess = () => resolve();
-            request.onerror = () => reject(request.error);
-        });
-    }
+    });
 
     /**
      * Create a new document
@@ -120,15 +35,14 @@ function createNotebookStore() {
     function createDocument(title: string = 'Untitled'): NotebookDocument {
         const now = new Date();
         const doc: NotebookDocument = {
-            id: generateId(),
+            id: generateId('doc'),
             title,
             content: '',
             createdAt: now,
             updatedAt: now
         };
 
-        documents = [doc, ...documents];
-        saveDocument(doc);
+        collection.insert(doc);
         return doc;
     }
 
@@ -139,88 +53,24 @@ function createNotebookStore() {
         id: string,
         updates: Partial<Pick<NotebookDocument, 'title' | 'content'>>
     ) {
-        const index = documents.findIndex((d) => d.id === id);
-        if (index === -1) return;
-
-        // Use $state.snapshot() to get a plain object (not a Proxy) for IndexedDB storage
-        const updated = {
-            ...$state.snapshot(documents[index]),
-            ...updates,
-            updatedAt: new Date()
-        };
-
-        // Update local state and re-sort
-        const newDocs = [...documents];
-        newDocs.splice(index, 1);
-        newDocs.unshift(updated); // Move to top (most recently updated)
-        documents = newDocs;
-
-        saveDocument(updated);
-    }
-
-    /**
-     * Delete a document
-     */
-    function deleteDocument(id: string) {
-        documents = documents.filter((d) => d.id !== id);
-
-        if (!db) return;
-
-        const transaction = db.transaction(STORE_NAME, 'readwrite');
-        const store = transaction.objectStore(STORE_NAME);
-        store.delete(id);
+        collection.update(id, updates);
     }
 
     /**
      * Get a document by ID
      */
     function getDocument(id: string): NotebookDocument | undefined {
-        return documents.find((d) => d.id === id);
-    }
-
-    /**
-     * Upsert documents from a sync operation.
-     * Preserves the original updatedAt (does not generate a new one).
-     * Only applies items that are newer than what's already stored.
-     */
-    async function upsertDocuments(incoming: NotebookDocument[]) {
-        if (!db || incoming.length === 0) return;
-
-        const transaction = db.transaction(STORE_NAME, 'readwrite');
-        const store = transaction.objectStore(STORE_NAME);
-
-        for (const doc of incoming) {
-            const existing = documents.find((d) => d.id === doc.id);
-            if (existing && existing.updatedAt >= doc.updatedAt) continue;
-
-            const snapshot = $state.snapshot(doc) as NotebookDocument;
-            store.put(snapshot);
-
-            const idx = documents.findIndex((d) => d.id === doc.id);
-            if (idx >= 0) {
-                documents[idx] = doc;
-            } else {
-                documents = [doc, ...documents];
-            }
-        }
-
-        // Re-sort by updatedAt descending
-        documents = [...documents].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
-
-        return new Promise<void>((resolve, reject) => {
-            transaction.oncomplete = () => resolve();
-            transaction.onerror = () => reject(transaction.error);
-        });
+        return collection.items.find((d) => d.id === id);
     }
 
     /**
      * Search documents by title or content
      */
     function searchDocuments(query: string): NotebookDocument[] {
-        if (!query.trim()) return documents;
+        if (!query.trim()) return collection.items;
 
         const lowerQuery = query.toLowerCase();
-        return documents.filter(
+        return collection.items.filter(
             (doc) =>
                 doc.title.toLowerCase().includes(lowerQuery) ||
                 doc.content.toLowerCase().includes(lowerQuery)
@@ -229,18 +79,18 @@ function createNotebookStore() {
 
     return {
         get documents() {
-            return documents;
+            return collection.items;
         },
         get initialized() {
-            return initialized;
+            return collection.initialized;
         },
-        init,
+        init: collection.init,
         createDocument,
         updateDocument,
-        deleteDocument,
+        deleteDocument: collection.remove,
         getDocument,
         searchDocuments,
-        upsertDocuments
+        upsertDocuments: collection.upsert
     };
 }
 

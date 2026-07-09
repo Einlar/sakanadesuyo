@@ -21,7 +21,9 @@
         return `https://jisho.org/search/${encodeURIComponent(term)}`;
     }
 
-    const dictionaryLabel = $derived(settings.dictionaryProvider === 'jpdb' ? 'JPDB' : 'Jisho');
+    const dictionaryLabel = $derived(
+        settings.dictionaryProvider === 'jpdb' ? 'JPDB' : 'Jisho'
+    );
 
     let containerWidth = $state(0);
     let fullTagWidth = $state(0);

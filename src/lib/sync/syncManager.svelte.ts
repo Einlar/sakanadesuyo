@@ -1,11 +1,21 @@
 import { notebookStore } from '$lib/stores/notebookStore.svelte';
 import { karaokeStore } from '$lib/stores/karaokeStore.svelte';
 import { webrtcManager } from './webrtcManager.svelte';
-import { serializeDocument, deserializeDocument, serializeSong, deserializeSong } from './serialization';
+import {
+    serializeDocument,
+    deserializeDocument,
+    serializeSong,
+    deserializeSong
+} from './serialization';
 import { computeDiff } from './merger';
 import { generateQRSvg } from './qrCode';
 import type Peer from 'simple-peer';
-import type { SyncManifest, SyncMessage, NotebookDocument, KaraokeSong } from './types';
+import type {
+    SyncManifest,
+    SyncMessage,
+    NotebookDocument,
+    KaraokeSong
+} from './types';
 
 function createSyncManager() {
     let qrSvg = $state<string | null>(null);
@@ -24,7 +34,9 @@ function createSyncManager() {
 
     webrtcManager.setOnChannelOpen((p) => {
         peer = p;
-        p.on('data', (data) => handleMessage(JSON.parse(data.toString()) as SyncMessage));
+        p.on('data', (data) =>
+            handleMessage(JSON.parse(data.toString()) as SyncMessage)
+        );
         beginSync();
     });
 
@@ -137,12 +149,24 @@ function createSyncManager() {
     }
 
     return {
-        get status() { return isDone ? 'done' : webrtcManager.status; },
-        get errorMessage() { return webrtcManager.errorMessage; },
-        get qrSvg() { return qrSvg; },
-        get pairUrl() { return pairUrl; },
-        get progress() { return progress; },
-        get syncResult() { return syncResult; },
+        get status() {
+            return isDone ? 'done' : webrtcManager.status;
+        },
+        get errorMessage() {
+            return webrtcManager.errorMessage;
+        },
+        get qrSvg() {
+            return qrSvg;
+        },
+        get pairUrl() {
+            return pairUrl;
+        },
+        get progress() {
+            return progress;
+        },
+        get syncResult() {
+            return syncResult;
+        },
         startAsInitiator,
         joinAsResponder,
         reset

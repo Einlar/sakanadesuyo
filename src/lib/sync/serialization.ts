@@ -15,7 +15,9 @@ export function serializeDocument(doc: NotebookDocument): SerializedDocument {
     };
 }
 
-export function deserializeDocument(data: SerializedDocument): NotebookDocument {
+export function deserializeDocument(
+    data: SerializedDocument
+): NotebookDocument {
     return {
         ...data,
         createdAt: new Date(data.createdAt),

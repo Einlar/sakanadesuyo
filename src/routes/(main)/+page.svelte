@@ -107,7 +107,12 @@
         // Start streaming analysis
         (async () => {
             try {
-                const stream = api.analyze(displayedSentence, context, undefined, settings.model);
+                const stream = api.analyze(
+                    displayedSentence,
+                    context,
+                    undefined,
+                    settings.model
+                );
                 let currentTerms: AnalyzedTerm[] = [];
 
                 for await (const terms of stream) {

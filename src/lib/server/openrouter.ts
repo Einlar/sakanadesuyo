@@ -4,10 +4,10 @@ import { analyzeItemsCount, analyzeSentenceLength } from '$lib/metrics';
 import { SongAnalysisResponseSchema } from '$lib/schemas';
 import type { AnalyzeSongResponse, SentenceAnalysis } from '$lib/types';
 import { OpenRouter } from '@openrouter/sdk';
-import type { ResponseFormatJSONSchema } from '@openrouter/sdk/models';
+import type { ChatFormatJsonSchemaConfig } from '@openrouter/sdk/models';
 import { streamLogger as log } from './logger';
 import {
-    HEADERS,
+    APP_ATTRIBUTION,
     PROVIDER_SETTINGS,
     RESPONSE_FORMAT,
     SONG_ANALYSIS_RESPONSE_FORMAT,
@@ -21,7 +21,7 @@ import {
 type OpenRouterRequestOptions = {
     model: string;
     messages: { role: 'system' | 'user'; content: string | any[] }[];
-    responseFormat?: ResponseFormatJSONSchema;
+    responseFormat?: ChatFormatJsonSchemaConfig;
     stream: boolean;
     onStreamComplete?: (fullContent: string) => void;
 };
@@ -50,20 +50,18 @@ async function makeOpenRouterRequest<T>(
 
     try {
         if (stream) {
-            const streamResponse = await openRouter.chat.send(
-                {
-                    chatGenerationParams: {
-                        model,
-                        messages,
-                        temperature,
-                        maxTokens,
-                        stream: true,
-                        provider: PROVIDER_SETTINGS,
-                        responseFormat
-                    }
-                },
-                { headers: HEADERS }
-            );
+            const streamResponse = await openRouter.chat.send({
+                ...APP_ATTRIBUTION,
+                chatRequest: {
+                    model,
+                    messages,
+                    temperature,
+                    maxTokens,
+                    stream: true,
+                    provider: PROVIDER_SETTINGS,
+                    responseFormat
+                }
+            });
 
             let cancelled = false;
 
@@ -82,9 +80,7 @@ async function makeOpenRouterRequest<T>(
                                 return;
                             }
                             chunkCount++;
-                            // @ts-ignore - SDK types might be missing ChatCompletionChunk export or structure mismatch
-                            const content = (chunk as any).choices?.[0]?.delta
-                                ?.content;
+                            const content = chunk.choices?.[0]?.delta?.content;
 
                             if (content && typeof content === 'string') {
                                 fullContent += content;
@@ -100,7 +96,10 @@ async function makeOpenRouterRequest<T>(
                         }
 
                         log.debug(
-                            { elapsedMs: Date.now() - startTime },
+                            {
+                                elapsedMs: Date.now() - startTime,
+                                chunkCount
+                            },
                             'Stream completed'
                         );
 
@@ -128,21 +127,19 @@ async function makeOpenRouterRequest<T>(
                 }
             });
         } else {
-            const response = await openRouter.chat.send(
-                {
-                    chatGenerationParams: {
-                        model,
-                        messages,
-                        temperature,
-                        maxTokens,
-                        stream: false,
-                        provider: PROVIDER_SETTINGS,
-                        responseFormat,
-                        plugins: [{ id: 'response-healing' }]
-                    }
-                },
-                { headers: HEADERS }
-            );
+            const response = await openRouter.chat.send({
+                ...APP_ATTRIBUTION,
+                chatRequest: {
+                    model,
+                    messages,
+                    temperature,
+                    maxTokens,
+                    stream: false,
+                    provider: PROVIDER_SETTINGS,
+                    responseFormat,
+                    plugins: [{ id: 'response-healing' }]
+                }
+            });
 
             const content = response.choices?.[0]?.message?.content;
             if (!content) throw new Error('No content from OpenRouter');

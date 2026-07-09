@@ -19,7 +19,10 @@ export interface SerializedDocument {
     updatedAt: string;
 }
 
-export type SerializedSong = Omit<KaraokeSong, 'audioBlob' | 'createdAt' | 'updatedAt'> & {
+export type SerializedSong = Omit<
+    KaraokeSong,
+    'audioBlob' | 'createdAt' | 'updatedAt'
+> & {
     createdAt: string;
     updatedAt: string;
 };

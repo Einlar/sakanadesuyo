@@ -64,11 +64,7 @@
                 artist: artist.trim()
             });
 
-            console.log(
-                `[AddSong] Searching for: title="${title.trim()}", artist="${artist.trim()}"`
-            );
             const response = await fetch(`/api/karaoke/lyrics?${params}`);
-            console.log('[AddSong] Response status:', response.status);
 
             if (!response.ok) {
                 throw new Error('Failed to fetch lyrics');
@@ -339,8 +335,7 @@
                         class="min-h-40 w-full flex-1 resize-none rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 text-sm leading-relaxed text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:outline-none md:min-h-0
                         {hasSyncedLyrics ? 'font-mono text-xs' : 'font-sans'}"
                         placeholder="Enter or paste lyrics here...&#10;&#10;Tip: Paste LRC format (e.g., [00:15.50] Lyrics text) to include timing data."
-                        bind:value={editableLyrics}
-                    ></textarea>
+                        bind:value={editableLyrics}></textarea>
                 </div>
             </div>
         {/if}

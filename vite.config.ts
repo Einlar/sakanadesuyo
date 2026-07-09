@@ -4,5 +4,9 @@ import { defineConfig } from 'vite';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
 
 export default defineConfig({
-    plugins: [tailwindcss(), sveltekit(), nodePolyfills({ exclude: ['module'] })]
+    plugins: [
+        tailwindcss(),
+        sveltekit(),
+        nodePolyfills({ exclude: ['module'] })
+    ]
 });

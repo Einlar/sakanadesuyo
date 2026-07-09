@@ -13,7 +13,11 @@
         const role = page.url.searchParams.get('role');
         if (token && role === 'join') {
             void syncManager.joinAsResponder(token);
-            try { replaceState('/sync', {}); } catch { /* router not ready */ }
+            try {
+                replaceState('/sync', {});
+            } catch {
+                /* router not ready */
+            }
         }
     });
 </script>
@@ -22,7 +26,9 @@
     <title>Sync | sakanadesuyo</title>
 </svelte:head>
 
-<div class="flex min-h-screen items-center justify-center bg-[var(--color-bg)] px-4">
+<div
+    class="flex min-h-screen items-center justify-center bg-[var(--color-bg)] px-4"
+>
     <div
         class="w-full max-w-sm rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8 shadow-lg"
     >
@@ -34,18 +40,24 @@
                 <SyncIcon class="h-5 w-5 text-[var(--color-primary)]" />
             </div>
             <div>
-                <h1 class="text-lg font-semibold text-[var(--color-text)]">Sync Data</h1>
-                <p class="text-sm text-[var(--color-text-muted)]">Transfer between devices</p>
+                <h1 class="text-lg font-semibold text-[var(--color-text)]">
+                    Sync Data
+                </h1>
+                <p class="text-sm text-[var(--color-text-muted)]">
+                    Transfer between devices
+                </p>
             </div>
         </div>
 
         <!-- State: idle -->
         {#if syncManager.status === 'idle'}
             <p class="mb-4 text-sm text-[var(--color-text-muted)]">
-                Sync your notes and songs to another device. No data is stored on the server.
+                Sync your notes and songs to another device. No data is stored
+                on the server.
             </p>
             <p class="mb-6 text-xs text-[var(--color-text-muted)] opacity-60">
-                This feature is experimental and may not work reliably in all environments.
+                This feature is experimental and may not work reliably in all
+                environments.
             </p>
             <div class="flex flex-col gap-3">
                 <button
@@ -56,22 +68,29 @@
                 </button>
             </div>
 
-        <!-- State: creating-session -->
+            <!-- State: creating-session -->
         {:else if syncManager.status === 'creating-session'}
-            <div class="flex items-center gap-3 text-sm text-[var(--color-text-muted)]">
+            <div
+                class="flex items-center gap-3 text-sm text-[var(--color-text-muted)]"
+            >
                 <LoaderIcon class="h-4 w-4 animate-spin" />
                 <span>Creating session…</span>
             </div>
 
-        <!-- State: waiting-for-peer -->
+            <!-- State: waiting-for-peer -->
         {:else if syncManager.status === 'waiting-for-peer'}
             <p class="mb-4 text-sm text-[var(--color-text-muted)]">
                 Scan this QR code on your other device, or share the link:
             </p>
             {#if syncManager.qrSvg && syncManager.pairUrl}
-                <QRDisplay qrSvg={syncManager.qrSvg} pairUrl={syncManager.pairUrl} />
+                <QRDisplay
+                    qrSvg={syncManager.qrSvg}
+                    pairUrl={syncManager.pairUrl}
+                />
             {/if}
-            <div class="mt-5 flex items-center gap-2 text-sm text-[var(--color-text-muted)]">
+            <div
+                class="mt-5 flex items-center gap-2 text-sm text-[var(--color-text-muted)]"
+            >
                 <LoaderIcon class="h-4 w-4 animate-spin" />
                 <span>Waiting for other device…</span>
             </div>
@@ -82,33 +101,58 @@
                 Cancel
             </button>
 
-        <!-- State: connecting -->
+            <!-- State: connecting -->
         {:else if syncManager.status === 'connecting'}
-            <div class="flex items-center gap-3 text-sm text-[var(--color-text-muted)]">
+            <div
+                class="flex items-center gap-3 text-sm text-[var(--color-text-muted)]"
+            >
                 <LoaderIcon class="h-4 w-4 animate-spin" />
                 <span>Establishing connection…</span>
             </div>
 
-        <!-- State: syncing -->
+            <!-- State: syncing -->
         {:else if syncManager.status === 'syncing'}
-            <p class="mb-4 text-sm font-medium text-[var(--color-text)]">Syncing…</p>
-            <SyncProgress sent={syncManager.progress.sent} received={syncManager.progress.received} />
+            <p class="mb-4 text-sm font-medium text-[var(--color-text)]">
+                Syncing…
+            </p>
+            <SyncProgress
+                sent={syncManager.progress.sent}
+                received={syncManager.progress.received}
+            />
 
-        <!-- State: done -->
+            <!-- State: done -->
         {:else if syncManager.status === 'done'}
             <div class="flex flex-col items-center gap-4 text-center">
                 <div
                     class="flex h-12 w-12 items-center justify-center rounded-full bg-green-500/10 text-green-500"
                 >
-                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    <svg
+                        class="h-6 w-6"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M5 13l4 4L19 7"
+                        />
                     </svg>
                 </div>
-                <p class="text-base font-semibold text-[var(--color-text)]">Sync complete</p>
+                <p class="text-base font-semibold text-[var(--color-text)]">
+                    Sync complete
+                </p>
                 {#if syncManager.syncResult}
                     <p class="text-sm text-[var(--color-text-muted)]">
-                        {syncManager.syncResult.docs} note{syncManager.syncResult.docs !== 1 ? 's' : ''},
-                        {syncManager.syncResult.songs} song{syncManager.syncResult.songs !== 1 ? 's' : ''} transferred
+                        {syncManager.syncResult.docs} note{syncManager
+                            .syncResult.docs !== 1
+                            ? 's'
+                            : ''},
+                        {syncManager.syncResult.songs} song{syncManager
+                            .syncResult.songs !== 1
+                            ? 's'
+                            : ''} transferred
                     </p>
                 {/if}
                 <div class="flex w-full gap-2">
@@ -133,9 +177,11 @@
                 </button>
             </div>
 
-        <!-- State: error -->
+            <!-- State: error -->
         {:else if syncManager.status === 'error'}
-            <div class="mb-4 rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-500">
+            <div
+                class="mb-4 rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-500"
+            >
                 {syncManager.errorMessage ?? 'An unknown error occurred'}
             </div>
             <button

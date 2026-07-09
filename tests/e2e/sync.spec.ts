@@ -1,19 +1,28 @@
 import { test, expect, type Page } from '@playwright/test';
 
 // Seed a notebook doc directly into IndexedDB on the given page
-async function seedNotebookDoc(page: Page, doc: { id: string; title: string; content: string }) {
+async function seedNotebookDoc(
+    page: Page,
+    doc: { id: string; title: string; content: string }
+) {
     await page.evaluate(async (doc) => {
         await new Promise<void>((resolve, reject) => {
             const req = indexedDB.open('wakarimasen-notebook', 1);
             req.onupgradeneeded = () => {
-                const store = req.result.createObjectStore('documents', { keyPath: 'id' });
+                const store = req.result.createObjectStore('documents', {
+                    keyPath: 'id'
+                });
                 store.createIndex('updatedAt', 'updatedAt', { unique: false });
             };
             req.onsuccess = () => {
                 const db = req.result;
                 const now = new Date().toISOString();
                 const tx = db.transaction('documents', 'readwrite');
-                tx.objectStore('documents').put({ ...doc, createdAt: now, updatedAt: now });
+                tx.objectStore('documents').put({
+                    ...doc,
+                    createdAt: now,
+                    updatedAt: now
+                });
                 tx.oncomplete = () => resolve();
                 tx.onerror = () => reject(tx.error);
             };
@@ -23,12 +32,17 @@ async function seedNotebookDoc(page: Page, doc: { id: string; title: string; con
 }
 
 // Seed a karaoke song directly into IndexedDB on the given page
-async function seedKaraokeSong(page: Page, song: { id: string; title: string; artist: string; lyrics: string }) {
+async function seedKaraokeSong(
+    page: Page,
+    song: { id: string; title: string; artist: string; lyrics: string }
+) {
     await page.evaluate(async (song) => {
         await new Promise<void>((resolve, reject) => {
             const req = indexedDB.open('wakarimasen-karaoke', 2);
             req.onupgradeneeded = () => {
-                const store = req.result.createObjectStore('songs', { keyPath: 'id' });
+                const store = req.result.createObjectStore('songs', {
+                    keyPath: 'id'
+                });
                 store.createIndex('updatedAt', 'updatedAt', { unique: false });
             };
             req.onsuccess = () => {
@@ -55,40 +69,56 @@ async function seedKaraokeSong(page: Page, song: { id: string; title: string; ar
 // Read all docs from IndexedDB on the given page
 function readNotebookDocs(page: Page) {
     return page.evaluate(async () => {
-        return new Promise<{ id: string; title: string }[]>((resolve, reject) => {
-            const req = indexedDB.open('wakarimasen-notebook', 1);
-            req.onsuccess = () => {
-                const db = req.result;
-                if (!db.objectStoreNames.contains('documents')) return resolve([]);
-                const tx = db.transaction('documents', 'readonly');
-                const all = tx.objectStore('documents').getAll();
-                all.onsuccess = () => resolve(all.result as { id: string; title: string }[]);
-                all.onerror = () => reject(all.error);
-            };
-            req.onerror = () => reject(req.error);
-        });
+        return new Promise<{ id: string; title: string }[]>(
+            (resolve, reject) => {
+                const req = indexedDB.open('wakarimasen-notebook', 1);
+                req.onsuccess = () => {
+                    const db = req.result;
+                    if (!db.objectStoreNames.contains('documents'))
+                        return resolve([]);
+                    const tx = db.transaction('documents', 'readonly');
+                    const all = tx.objectStore('documents').getAll();
+                    all.onsuccess = () =>
+                        resolve(all.result as { id: string; title: string }[]);
+                    all.onerror = () => reject(all.error);
+                };
+                req.onerror = () => reject(req.error);
+            }
+        );
     });
 }
 
 // Read all songs from IndexedDB on the given page
 function readKaraokeSongs(page: Page) {
     return page.evaluate(async () => {
-        return new Promise<{ id: string; title: string }[]>((resolve, reject) => {
-            const req = indexedDB.open('wakarimasen-karaoke', 2);
-            req.onsuccess = () => {
-                const db = req.result;
-                if (!db.objectStoreNames.contains('songs')) return resolve([]);
-                const tx = db.transaction('songs', 'readonly');
-                const all = tx.objectStore('songs').getAll();
-                all.onsuccess = () => resolve(all.result as { id: string; title: string }[]);
-                all.onerror = () => reject(all.error);
-            };
-            req.onerror = () => reject(req.error);
-        });
+        return new Promise<{ id: string; title: string }[]>(
+            (resolve, reject) => {
+                const req = indexedDB.open('wakarimasen-karaoke', 2);
+                req.onsuccess = () => {
+                    const db = req.result;
+                    if (!db.objectStoreNames.contains('songs'))
+                        return resolve([]);
+                    const tx = db.transaction('songs', 'readonly');
+                    const all = tx.objectStore('songs').getAll();
+                    all.onsuccess = () =>
+                        resolve(all.result as { id: string; title: string }[]);
+                    all.onerror = () => reject(all.error);
+                };
+                req.onerror = () => reject(req.error);
+            }
+        );
     });
 }
 
-test('sync transfers notebook docs and karaoke songs between two devices', async ({ browser }) => {
+// The sync feature is hidden behind PUBLIC_ENABLE_SYNC while it's a WIP;
+// the /sync page redirects to / when the flag is off, so skip the test.
+test('sync transfers notebook docs and karaoke songs between two devices', async ({
+    browser
+}) => {
+    test.skip(
+        process.env.PUBLIC_ENABLE_SYNC !== 'true',
+        'sync feature is disabled (set PUBLIC_ENABLE_SYNC=true to test)'
+    );
     test.setTimeout(60_000);
     // Two separate browser contexts simulate two devices
     const initiatorCtx = await browser.newContext();
@@ -141,28 +171,44 @@ test('sync transfers notebook docs and karaoke songs between two devices', async
     // ------------------------------------------------------------------
     // Both sides should reach "Sync complete"
     // ------------------------------------------------------------------
-    await expect(initiator.getByText('Sync complete')).toBeVisible({ timeout: 30_000 });
-    await expect(joiner.getByText('Sync complete')).toBeVisible({ timeout: 30_000 });
+    await expect(initiator.getByText('Sync complete')).toBeVisible({
+        timeout: 30_000
+    });
+    await expect(joiner.getByText('Sync complete')).toBeVisible({
+        timeout: 30_000
+    });
 
     // ------------------------------------------------------------------
     // Verify synced counts shown in UI.
     // syncResult counts what each side *received*: initiator sent everything
     // and received nothing (joiner was empty), so its count is 0.
     // ------------------------------------------------------------------
-    await expect(initiator.locator('p').filter({ hasText: 'transferred' })).toContainText('0 notes');
-    await expect(joiner.locator('p').filter({ hasText: 'transferred' })).toContainText('2 notes');
-    await expect(joiner.locator('p').filter({ hasText: 'transferred' })).toContainText('1 song');
+    await expect(
+        initiator.locator('p').filter({ hasText: 'transferred' })
+    ).toContainText('0 notes');
+    await expect(
+        joiner.locator('p').filter({ hasText: 'transferred' })
+    ).toContainText('2 notes');
+    await expect(
+        joiner.locator('p').filter({ hasText: 'transferred' })
+    ).toContainText('1 song');
 
     // ------------------------------------------------------------------
     // Verify data landed in joiner's IndexedDB
     // ------------------------------------------------------------------
     const joinerDocs = await readNotebookDocs(joiner);
-    expect(joinerDocs.map((d) => d.id)).toEqual(expect.arrayContaining(['doc-test-1', 'doc-test-2']));
-    expect(joinerDocs.find((d) => d.id === 'doc-test-1')?.title).toBe('Test Note');
+    expect(joinerDocs.map((d) => d.id)).toEqual(
+        expect.arrayContaining(['doc-test-1', 'doc-test-2'])
+    );
+    expect(joinerDocs.find((d) => d.id === 'doc-test-1')?.title).toBe(
+        'Test Note'
+    );
 
     const joinerSongs = await readKaraokeSongs(joiner);
     expect(joinerSongs.map((s) => s.id)).toContain('song-test-1');
-    expect(joinerSongs.find((s) => s.id === 'song-test-1')?.title).toBe('Test Song');
+    expect(joinerSongs.find((s) => s.id === 'song-test-1')?.title).toBe(
+        'Test Song'
+    );
 
     await initiatorCtx.close();
     await joinerCtx.close();

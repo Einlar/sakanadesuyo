@@ -12,7 +12,11 @@ const config = {
                 'default-src': ['self'],
                 'script-src': ['self'],
                 // unsafe-inline needed for Tailwind/Svelte scoped styles; Google Fonts injects its own stylesheet
-                'style-src': ['self', 'unsafe-inline', 'https://fonts.googleapis.com'],
+                'style-src': [
+                    'self',
+                    'unsafe-inline',
+                    'https://fonts.googleapis.com'
+                ],
                 // Actual font files are served from gstatic
                 'font-src': ['self', 'https://fonts.gstatic.com'],
                 // data: needed for OCR (ImageNode fetches images as data URLs)

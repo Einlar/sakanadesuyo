@@ -39,7 +39,9 @@ function createWebRTCManager() {
 
     // If only 'host' candidates were gathered, STUN is unreachable — WebRTC is likely blocked.
     function withBlockedHint(msg: string): string {
-        const hasPublicCandidate = gatheredCandidateTypes.has('srflx') || gatheredCandidateTypes.has('relay');
+        const hasPublicCandidate =
+            gatheredCandidateTypes.has('srflx') ||
+            gatheredCandidateTypes.has('relay');
         return hasPublicCandidate
             ? msg
             : `${msg} WebRTC traffic may be blocked by a firewall or strict NAT on this network.`;
@@ -49,7 +51,12 @@ function createWebRTCManager() {
         await fetch('/api/sync/signal', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token, from: peerId, type: 'signal', payload: data })
+            body: JSON.stringify({
+                token,
+                from: peerId,
+                type: 'signal',
+                payload: data
+            })
         });
     }
 
@@ -101,7 +108,12 @@ function createWebRTCManager() {
         };
     }
 
-    function handleSSEMessage(msg: { type: string; peerId?: string; peerCount?: number; payload?: Peer.SignalData }) {
+    function handleSSEMessage(msg: {
+        type: string;
+        peerId?: string;
+        peerCount?: number;
+        payload?: Peer.SignalData;
+    }) {
         if (msg.type === 'connected') {
             peerId = msg.peerId ?? null;
         }
@@ -109,7 +121,11 @@ function createWebRTCManager() {
             // I was first to connect — I initiate the offer
             status = 'connecting';
             createPeer(true);
-        } else if (msg.type === 'connected' && (msg.peerCount ?? 0) === 2 && !peer) {
+        } else if (
+            msg.type === 'connected' &&
+            (msg.peerCount ?? 0) === 2 &&
+            !peer
+        ) {
             // I joined second — wait for the initiator's offer
             status = 'connecting';
             createPeer(false);
@@ -146,8 +162,12 @@ function createWebRTCManager() {
     }
 
     return {
-        get status() { return status; },
-        get errorMessage() { return errorMessage; },
+        get status() {
+            return status;
+        },
+        get errorMessage() {
+            return errorMessage;
+        },
         startAsInitiator,
         joinAsResponder,
         reset,

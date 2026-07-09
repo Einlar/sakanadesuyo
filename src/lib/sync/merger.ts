@@ -6,7 +6,10 @@ export interface SyncDiff {
     neededSongIds: string[];
 }
 
-export function computeDiff(local: SyncManifest, remote: SyncManifest): SyncDiff {
+export function computeDiff(
+    local: SyncManifest,
+    remote: SyncManifest
+): SyncDiff {
     const localDocs = new Map(local.notebooks.map((n) => [n.id, n.updatedAt]));
     const localSongs = new Map(local.songs.map((s) => [s.id, s.updatedAt]));
 

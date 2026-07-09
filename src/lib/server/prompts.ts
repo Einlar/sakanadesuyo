@@ -3,25 +3,25 @@ import {
     SongAnalysisResponseSchema
 } from '$lib/schemas';
 import type {
-    ChatGenerationParamsProvider,
-    ResponseFormatJSONSchema
+    ChatFormatJsonSchemaConfig,
+    ProviderPreferences
 } from '@openrouter/sdk/models';
 import { toJSONSchema } from 'zod/v4';
 import { streamLogger as log } from './logger';
 import type { SentenceAnalysis } from '$lib/types';
 
 /**
- * Common headers for requests to OpenRouter.
+ * App attribution shown in OpenRouter's dashboard and rankings.
  */
-export const HEADERS = {
-    Referer: 'https://sakana.amogus.it',
-    'X-Title': 'Sakana desu yo'
+export const APP_ATTRIBUTION = {
+    httpReferer: 'https://sakana.amogus.it',
+    appTitle: 'Sakana desu yo'
 };
 
 /**
  * Common settings for choosing LLM providers via OpenRouter.
  */
-export const PROVIDER_SETTINGS: ChatGenerationParamsProvider = {
+export const PROVIDER_SETTINGS: ProviderPreferences = {
     allowFallbacks: true
 };
 
@@ -36,7 +36,7 @@ const ANALYSIS_JSON_SCHEMA = toJSONSchema(SentenceAnalysisSchema, {
 /**
  * Response format configuration for structured outputs.
  */
-export const RESPONSE_FORMAT: ResponseFormatJSONSchema = {
+export const RESPONSE_FORMAT: ChatFormatJsonSchemaConfig = {
     type: 'json_schema',
     jsonSchema: {
         name: 'sentence_analysis',
@@ -216,7 +216,7 @@ const SONG_ANALYSIS_JSON_SCHEMA = toJSONSchema(SongAnalysisResponseSchema, {
 /**
  * Response format configuration for song analysis.
  */
-export const SONG_ANALYSIS_RESPONSE_FORMAT: ResponseFormatJSONSchema = {
+export const SONG_ANALYSIS_RESPONSE_FORMAT: ChatFormatJsonSchemaConfig = {
     type: 'json_schema',
     jsonSchema: {
         name: 'song_analysis',

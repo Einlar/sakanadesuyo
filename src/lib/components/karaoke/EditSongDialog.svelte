@@ -34,10 +34,15 @@
     let dialog: HTMLDialogElement;
     let fileInput: HTMLInputElement;
 
-    // Editable state
+    // Editable draft state, intentionally initialized once from props:
+    // the dialog is remounted (via {#if}) every time it opens.
+    // svelte-ignore state_referenced_locally
     let title = $state(currentTitle);
+    // svelte-ignore state_referenced_locally
     let artist = $state(currentArtist);
+    // svelte-ignore state_referenced_locally
     let lyrics = $state(currentLyrics);
+    // svelte-ignore state_referenced_locally
     let coverUrl = $state(currentCoverUrl);
     let selectedFile = $state<File | null>(null);
     let previewUrl = $state<string | null>(null);

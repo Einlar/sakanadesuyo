@@ -1,7 +1,11 @@
 <script lang="ts">
     import AnalysisGrid from '$lib/components/AnalysisGrid.svelte';
     import SentenceDisplay from '$lib/components/SentenceDisplay.svelte';
-    import type { AnalysisBarState, SentenceAnalysis, AnalyzedTerm } from '$lib/types';
+    import type {
+        AnalysisBarState,
+        SentenceAnalysis,
+        AnalyzedTerm
+    } from '$lib/types';
     import { slide } from 'svelte/transition';
     import TrashIcon from '../icons/TrashIcon.svelte';
     import EditIcon from '../icons/EditIcon.svelte';
@@ -66,7 +70,7 @@
 
     function scrollToTerm(term: AnalyzedTerm) {
         if (!data?.analysis?.terms) return;
-        
+
         const index = data.analysis.terms.indexOf(term);
         if (index !== -1) {
             const el = document.getElementById(`term-${index}`);

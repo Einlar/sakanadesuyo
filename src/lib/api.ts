@@ -36,6 +36,57 @@ class ApiClient {
         return response.json();
     }
 
+    /**
+     * POSTs JSON to an endpoint that streams back a single JSON document,
+     * progressively parsed with jsonriver. Returns the stream of document
+     * snapshots plus a WeakMap marking which nested objects have been
+     * fully received.
+     */
+    private async streamJson(
+        url: string,
+        body: unknown,
+        errorPrefix: string,
+        signal?: AbortSignal
+    ): Promise<{
+        snapshots: AsyncIterable<unknown>;
+        completed: WeakMap<object, boolean>;
+    }> {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(body),
+            signal
+        });
+
+        if (!response.ok || !response.body) {
+            let errorMessage = `${errorPrefix} failed with status ${response.status}`;
+            let errorData;
+            try {
+                errorData = await response.json();
+                if (errorData.message) {
+                    errorMessage += `: ${errorData.message}`;
+                }
+            } catch {
+                // Could not parse error JSON
+            }
+            throw new ApiError(errorMessage, response.status, errorData);
+        }
+
+        const stream = response.body.pipeThrough(new TextDecoderStream());
+        const completed = new WeakMap<object, boolean>();
+        const snapshots = parse(stream as unknown as AsyncIterable<string>, {
+            completeCallback: (val) => {
+                if (val && typeof val === 'object') {
+                    completed.set(val, true);
+                }
+            }
+        });
+
+        return { snapshots, completed };
+    }
+
     async extractTextFromImage(image: File): Promise<OCRResponse> {
         const formData = new FormData();
         formData.append('image', image);
@@ -60,80 +111,24 @@ class ApiClient {
         return response.batch;
     }
 
-    /**
-     * Fetches synced lyrics from LRCLIB via the proxy API.
-     *
-     * @example
-     * const lyrics = await api.fetchLyrics('Idol', 'YOASOBI');
-     * console.log(lyrics.syncedLyrics); // "[00:00.58] First line..."
-     */
-    async fetchLyrics(
-        trackName: string,
-        artistName: string
-    ): Promise<{
-        id: number;
-        trackName: string;
-        artistName: string;
-        albumName: string;
-        duration: number;
-        instrumental: boolean;
-        plainLyrics: string | null;
-        syncedLyrics: string | null;
-    }> {
-        const params = new URLSearchParams({
-            track_name: trackName,
-            artist_name: artistName
-        });
-        return this.request(`/api/lyrics?${params.toString()}`);
-    }
-
     async *analyze(
         sentence: string,
         context?: string,
         signal?: AbortSignal,
         model?: string
     ): AsyncGenerator<AnalyzedTerm[], void, unknown> {
-        const response = await fetch('/api/analyze', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ sentence, context, model }),
-            signal
-        });
-
-        if (!response.ok || !response.body) {
-            let errorMessage = `Analysis failed with status ${response.status}`;
-            let errorData;
-            try {
-                errorData = await response.json();
-                if (errorData.message) {
-                    errorMessage += `: ${errorData.message}`;
-                }
-            } catch (e) {
-                // Could not parse error JSON
-            }
-            throw new ApiError(errorMessage, response.status, errorData);
-        }
-
         // Stream whole term objects
-        const stream = response.body.pipeThrough(new TextDecoderStream());
-        const completed = new WeakMap<object, boolean>();
-        const analysisStream = parse(
-            stream as unknown as AsyncIterable<string>,
-            {
-                completeCallback: (val) => {
-                    if (val && typeof val === 'object') {
-                        completed.set(val, true);
-                    }
-                }
-            }
+        const { snapshots, completed } = await this.streamJson(
+            '/api/analyze',
+            { sentence, context, model },
+            'Analysis',
+            signal
         );
 
         let lastTermCount = 0;
         let data: Partial<SentenceAnalysis> | undefined;
 
-        for await (const partialAnalysis of analysisStream) {
+        for await (const partialAnalysis of snapshots) {
             data = partialAnalysis as Partial<SentenceAnalysis>;
             if (data?.terms && Array.isArray(data.terms)) {
                 const completeTerms = data.terms.filter((term) =>
@@ -169,47 +164,18 @@ class ApiClient {
         void,
         unknown
     > {
-        const response = await fetch('/api/analyze-song', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ fullSong, lines, batchIndex: 0, model }),
-            signal
-        });
-
-        if (!response.ok || !response.body) {
-            let errorMessage = `Song analysis failed with status ${response.status}`;
-            let errorData;
-            try {
-                errorData = await response.json();
-                if (errorData.message) {
-                    errorMessage += `: ${errorData.message}`;
-                }
-            } catch {
-                // Could not parse error JSON
-            }
-            throw new ApiError(errorMessage, response.status, errorData);
-        }
-
         // Stream the response
-        const stream = response.body.pipeThrough(new TextDecoderStream());
-        const completed = new WeakMap<object, boolean>();
-        const analysisStream = parse(
-            stream as unknown as AsyncIterable<string>,
-            {
-                completeCallback: (val) => {
-                    if (val && typeof val === 'object') {
-                        completed.set(val, true);
-                    }
-                }
-            }
+        const { snapshots, completed } = await this.streamJson(
+            '/api/analyze-song',
+            { fullSong, lines, batchIndex: 0, model },
+            'Song analysis',
+            signal
         );
 
         let lastAnalysisCount = 0;
         let data: Partial<AnalyzeSongResponse> | undefined;
 
-        for await (const partialResponse of analysisStream) {
+        for await (const partialResponse of snapshots) {
             data = partialResponse as Partial<AnalyzeSongResponse>;
             if (data?.analyses && Array.isArray(data.analyses)) {
                 // Yield newly completed analyses

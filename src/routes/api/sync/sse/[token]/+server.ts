@@ -1,4 +1,8 @@
-import { getSession, pruneOldSessions, sseEnqueue } from '$lib/server/syncSessions';
+import {
+    getSession,
+    pruneOldSessions,
+    sseEnqueue
+} from '$lib/server/syncSessions';
 import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
