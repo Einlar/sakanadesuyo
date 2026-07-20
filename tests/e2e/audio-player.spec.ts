@@ -57,13 +57,10 @@ test.describe('Audio Player', () => {
         // 6. Verify player appears
         await songPage.verifyPlayerVisible();
 
-        // 7. Test Play/Pause UI state
+        // 7. Toggle playback. The play button is only enabled once the Web
+        // Audio engine has decoded the blob, so a successful click confirms the
+        // audio is loaded and playable.
         await songPage.togglePlay();
-
-        // Since the audio file is very short, we might not catch the 'Playing' state (Pause button)
-        // consistently. We verify the audio element has a source instead.
-        const audioSrc = await songPage.audioElement.getAttribute('src');
-        expect(audioSrc).toMatch(/^blob:/);
 
         // 8. Reload and verify persistence
         await page.reload();

@@ -17,7 +17,6 @@ export class SongPage {
     readonly confirmAddAudioButton: Locator;
     readonly playPauseButton: Locator;
     readonly volumeControl: Locator;
-    readonly audioElement: Locator;
 
     constructor(page: Page) {
         this.page = page;
@@ -45,7 +44,6 @@ export class SongPage {
             name: /Play|Pause/
         });
         this.volumeControl = page.getByLabel('Volume');
-        this.audioElement = page.locator('audio');
     }
 
     async verifyUrl(pattern: RegExp) {
@@ -205,7 +203,9 @@ export class SongPage {
     async verifyPlayerVisible() {
         await expect(this.playPauseButton).toBeVisible();
         await expect(this.volumeControl).toBeVisible();
-        await expect(this.audioElement).toBeAttached();
+        // The Web Audio engine decodes the blob before enabling playback, so an
+        // enabled play button confirms the audio loaded and is ready.
+        await expect(this.playPauseButton).toBeEnabled();
     }
 
     async verifyPlayerHidden() {

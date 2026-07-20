@@ -50,7 +50,14 @@ export class WebAudioPlayer {
         this.#offset = 0;
 
         const bytes = await blob.arrayBuffer();
-        const buffer = await this.#ctx.decodeAudioData(bytes);
+        let buffer: AudioBuffer;
+        try {
+            buffer = await this.#ctx.decodeAudioData(bytes);
+        } catch (err) {
+            // Corrupt/unsupported file: stay un-ready rather than crashing.
+            console.error('Failed to decode audio', err);
+            return;
+        }
 
         this.#buffer = buffer;
         this.duration = buffer.duration;
