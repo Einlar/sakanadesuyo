@@ -19,9 +19,9 @@ const config = {
                 ],
                 // Actual font files are served from gstatic
                 'font-src': ['self', 'https://fonts.gstatic.com'],
-                // data: needed for OCR (ImageNode fetches images as data URLs)
-                // data: for OCR; mxmcdn.net for Musixmatch album covers
-                'img-src': ['self', 'data:', 'https://s.mxmcdn.net'],
+                // data: for OCR (ImageNode fetches images as data URLs); mxmcdn.net for Musixmatch album covers
+                // blob: needed for cover art preview (object URL of a not-yet-uploaded file)
+                'img-src': ['self', 'data:', 'blob:', 'https://s.mxmcdn.net'],
                 // blob: needed for karaoke audio playback (Audio element src is an object URL)
                 'media-src': ['self', 'blob:'],
                 // All client fetches/SSE/WebRTC signaling are same-origin
