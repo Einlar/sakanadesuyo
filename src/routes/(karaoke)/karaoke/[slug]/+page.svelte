@@ -188,7 +188,6 @@
         return Math.round((analyzed / nonEmpty.length) * 100);
     });
 
-    let audioUrl = $state<string | null>(null);
     let currentTime = $state(0);
     let isPaused = $state(true);
     let showAddAudioDialog = $state(false);
@@ -234,18 +233,9 @@
         }
     };
 
-    // Extract audioBlob separately so the effect only re-runs when the blob changes
+    // The Web Audio player reads bytes straight from the Blob, so no object
+    // URL is needed here.
     let audioBlob = $derived(song?.audioBlob);
-
-    $effect(() => {
-        if (audioBlob) {
-            const url = URL.createObjectURL(audioBlob);
-            audioUrl = url;
-            return () => URL.revokeObjectURL(url);
-        } else {
-            audioUrl = null;
-        }
-    });
 </script>
 
 {#snippet headerContent()}
@@ -425,9 +415,9 @@
             <div class="flex min-h-0 w-full flex-1 overflow-hidden">
                 <!-- Main content column: Player + Lyrics -->
                 <div class="flex min-w-0 flex-1 flex-col">
-                    {#if audioUrl}
+                    {#if audioBlob}
                         <AudioPlayer
-                            src={audioUrl}
+                            blob={audioBlob}
                             bind:currentTime
                             bind:paused={isPaused}
                         />
@@ -437,7 +427,7 @@
                         <SyncLyricsMode
                             sentences={song.sentences}
                             {currentTime}
-                            hasAudio={!!audioUrl}
+                            hasAudio={!!audioBlob}
                             coverUrl={song.coverUrl}
                             onSave={handleSaveSync}
                             onCancel={handleCancelSync}

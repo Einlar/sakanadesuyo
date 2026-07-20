@@ -1,35 +1,45 @@
 <script lang="ts">
     import { PersistentState } from '$lib/utils/storage.svelte';
-    import { onMount } from 'svelte';
+    import { WebAudioPlayer } from '$lib/audio/webAudioPlayer.svelte';
+    import { onDestroy } from 'svelte';
 
     type Props = {
-        src: string;
+        blob: Blob;
         currentTime?: number;
         paused?: boolean;
     };
 
     let {
-        src,
+        blob,
         currentTime = $bindable(0),
         paused = $bindable(true)
     }: Props = $props();
 
-    let audio: HTMLAudioElement;
-    let duration = $state(0);
     const volumeState = new PersistentState<number>('karaoke_volume', 0.8);
+
+    // Sample-accurate playback engine. Owns its own AudioContext for the
+    // component's lifetime; only ever runs on the client (the player is
+    // rendered behind an `audioBlob` guard that is only set client-side).
+    const engine = new WebAudioPlayer(volumeState.current);
+    engine.onended = () => {
+        currentTime = 0;
+        paused = true; // explicitly pause so the loop stops
+    };
+
+    let duration = $derived(engine.duration);
     let isDraggingVolume = $state(false);
     let volumeControl: HTMLDivElement;
 
     let isDraggingSeek = $state(false);
     let progressBar: HTMLDivElement;
 
+    // Decode the audio whenever the source changes.
+    $effect(() => {
+        engine.load(blob);
+    });
+
     function togglePlay() {
-        if (!audio) return;
-        if (audio.paused) {
-            audio.play();
-        } else {
-            audio.pause();
-        }
+        paused = !paused;
     }
 
     function formatTime(seconds: number) {
@@ -39,27 +49,39 @@
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     }
 
-    /* 
-       Sync currentTime prop to audio element when it changes from outside (seeking).
-       We use a threshold to avoid conflicts with normal time updates during playback.
+    /*
+       Drive the engine from the `paused` prop — the single source of playback
+       intent. play()/pause() are no-ops when already in that state, so this
+       just re-asserts intent whenever `paused` or readiness changes.
+    */
+    $effect(() => {
+        if (!engine.ready) return;
+        if (paused) engine.pause();
+        else engine.play();
+    });
+
+    /*
+       Sync currentTime prop to the engine when it changes from outside
+       (seeking). We use a threshold to avoid conflicts with the rAF time
+       updates during playback.
     */
     $effect(() => {
         if (
-            audio &&
+            engine.ready &&
             !isDraggingSeek &&
-            Math.abs(audio.currentTime - currentTime) > 0.5
+            Math.abs(engine.currentTime - currentTime) > 0.5
         ) {
-            audio.currentTime = currentTime;
+            engine.seek(currentTime);
         }
     });
 
     function updateSeekFromEvent(e: MouseEvent) {
-        if (!audio || !duration || !progressBar) return;
+        if (!engine.ready || !duration || !progressBar) return;
         const rect = progressBar.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const percent = Math.max(0, Math.min(1, x / rect.width));
         const newTime = percent * duration;
-        audio.currentTime = newTime;
+        engine.seek(newTime);
         currentTime = newTime;
     }
 
@@ -81,41 +103,14 @@
         window.addEventListener('mouseup', handleWindowMouseUpSeek);
     }
 
-    function updateVolumeFromEvent(e: MouseEvent) {
-        const target = e.currentTarget as HTMLDivElement;
-        const rect = target.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const newVolume = Math.max(0, Math.min(1, x / rect.width));
-        volumeState.current = newVolume;
-        if (audio) {
-            audio.volume = volumeState.current;
-        }
-    }
-
-    function handleVolumeMouseDown(e: MouseEvent) {
-        isDraggingVolume = true;
-        updateVolumeFromEvent(e);
-        window.addEventListener('mousemove', handleWindowMouseMove);
-        window.addEventListener('mouseup', handleWindowMouseUp);
-    }
-
-    function handleWindowMouseMove(e: MouseEvent) {
-        if (!isDraggingVolume) return;
-        // We need the rect of the volume control... but we are in window scope.
-        // Easier to just not support drag outside for a simple component or use a bound element.
-        // Actually, let's keep it simple: click to set, or basic drag support if we bind the element.
-    }
-
-    // Better volume drag handler for window
+    // Volume drag: click or drag along the control to set the level.
     function handleGlobalVolumeDrag(e: MouseEvent) {
         if (!isDraggingVolume || !volumeControl) return;
         const rect = volumeControl.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const newVolume = Math.max(0, Math.min(1, x / rect.width));
         volumeState.current = newVolume;
-        if (audio) {
-            audio.volume = newVolume;
-        }
+        engine.setVolume(newVolume);
     }
 
     function handleWindowMouseUp() {
@@ -131,23 +126,23 @@
             const x = e.clientX - rect.left;
             const v = Math.max(0, Math.min(1, x / rect.width));
             volumeState.current = v;
-            if (audio) audio.volume = v;
+            engine.setVolume(v);
         }
         window.addEventListener('mousemove', handleGlobalVolumeDrag);
         window.addEventListener('mouseup', handleWindowMouseUp);
     }
 
     /*
-        Use requestAnimationFrame for smooth time updates (60fps) instead of ontimeupdate (~4fps).
-        This ensures lyrics and progress bar are perfectly smooth.
+        Use requestAnimationFrame for smooth time updates (60fps) so the lyrics
+        and progress bar track the engine clock smoothly.
     */
     let rafId: number;
 
     function loop() {
-        if (!paused && audio) {
-            // Don't update time from audio while dragging to prevent jitter
+        if (!paused) {
+            // Don't update time from the engine while dragging to prevent jitter
             if (!isDraggingSeek) {
-                currentTime = audio.currentTime;
+                currentTime = engine.currentTime;
             }
             rafId = requestAnimationFrame(loop);
         }
@@ -163,21 +158,7 @@
         return () => cancelAnimationFrame(rafId);
     });
 
-    function onDurationChange() {
-        if (!audio) return;
-        duration = audio.duration;
-    }
-
-    function onEnded() {
-        currentTime = 0;
-        paused = true; // explicitly pause so the loop stops
-    }
-
-    onMount(() => {
-        if (audio) {
-            audio.volume = volumeState.current;
-        }
-    });
+    onDestroy(() => engine.destroy());
 </script>
 
 <div
@@ -188,7 +169,8 @@
         <!-- Play/Pause Button -->
         <button
             onclick={togglePlay}
-            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)] text-black shadow-sm transition-transform hover:scale-105 active:scale-95"
+            disabled={!engine.ready}
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary)] text-black shadow-sm transition-transform hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
             aria-label={paused ? 'Play' : 'Pause'}
         >
             {#if paused}
@@ -275,29 +257,7 @@
                         />
                     </svg>
                 </div>
-
-                <!-- Alternative approach for simple clipping: 
-                      Use a container width = volume %. 
-                      Inside, render the FULL SVG but keep it same physical size as parent container?
-                      No, if we clip a container, the contents act as if cropped.
-                      So we need the inner SVG to be width: 100% of the PARENT (h-6 w-12), not the clipping container.
-                      If the clipping container is 50% width, the inner SVG needs to be 200% width relative to it to maintain aspect ratio/size?
-                      Better: Use absolute positioning and the same fixed pixel size or strict 100% of the wrapper context.
-                 -->
             </div>
         </div>
-
-        <audio
-            bind:this={audio}
-            bind:paused
-            {src}
-            onended={onEnded}
-            ondurationchange={onDurationChange}
-            class="hidden"
-        ></audio>
     </div>
 </div>
-
-<style>
-    /* No custom styles needed for basic SVG implementation */
-</style>
