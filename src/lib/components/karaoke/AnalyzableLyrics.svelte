@@ -89,10 +89,10 @@
                 `[data-line-index="${activeLineIndex}"]`
             );
             if (el) {
-                el.scrollIntoView({
-                    behavior: isSeeking ? 'instant' : 'smooth',
-                    block: 'center'
-                });
+                // Always ease the scroll — the highlight already snaps to the
+                // correct line (lookahead is disabled while seeking), so a
+                // smooth scroll reads as a gentle glide rather than a jump.
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         }
     });
