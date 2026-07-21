@@ -124,11 +124,23 @@ export function createIdbCollection<T extends StoredRecord>(
         const index = items.findIndex((item) => item.id === id);
         if (index === -1) return;
 
+        const original = items[index];
         const updated: T = {
-            ...($state.snapshot(items[index]) as T),
+            ...($state.snapshot(original) as T),
             ...updates,
             updatedAt: new Date()
         };
+
+        // $state.snapshot deep-clones via structuredClone, which mints a fresh
+        // Blob on every call. Consumers that key off blob identity (e.g. the
+        // audio player's decode effect) would then reload — cutting playback —
+        // on every unrelated update. Re-attach the original Blob references so
+        // identity stays stable unless the caller explicitly replaced the field.
+        for (const [key, value] of Object.entries(original)) {
+            if (value instanceof Blob && !(key in updates)) {
+                (updated as Record<string, unknown>)[key] = value;
+            }
+        }
 
         const next = [...items];
         next.splice(index, 1);
