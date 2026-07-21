@@ -4,7 +4,12 @@ import { analyzeItemsCount, analyzeSentenceLength } from '$lib/metrics';
 import { SongAnalysisResponseSchema } from '$lib/schemas';
 import type { AnalyzeSongResponse, SentenceAnalysis } from '$lib/types';
 import { OpenRouter } from '@openrouter/sdk';
-import type { ChatFormatJsonSchemaConfig } from '@openrouter/sdk/models';
+import type {
+    ChatFormatJsonSchemaConfig,
+    ChatResult,
+    ChatStreamChunk
+} from '@openrouter/sdk/models';
+import type { EventStream } from '@openrouter/sdk/lib/event-streams';
 import { streamLogger as log } from './logger';
 import {
     APP_ATTRIBUTION,
@@ -50,7 +55,9 @@ async function makeOpenRouterRequest<T>(
 
     try {
         if (stream) {
-            const streamResponse = await openRouter.chat.send({
+            // chat.send()'s return type is a generic union regardless of the
+            // `stream` flag; narrow it here since we know which branch we're in.
+            const streamResponse = (await openRouter.chat.send({
                 ...APP_ATTRIBUTION,
                 chatRequest: {
                     model,
@@ -61,7 +68,7 @@ async function makeOpenRouterRequest<T>(
                     provider: PROVIDER_SETTINGS,
                     responseFormat
                 }
-            });
+            })) as EventStream<ChatStreamChunk>;
 
             let cancelled = false;
 
@@ -127,7 +134,7 @@ async function makeOpenRouterRequest<T>(
                 }
             });
         } else {
-            const response = await openRouter.chat.send({
+            const response = (await openRouter.chat.send({
                 ...APP_ATTRIBUTION,
                 chatRequest: {
                     model,
@@ -139,7 +146,7 @@ async function makeOpenRouterRequest<T>(
                     responseFormat,
                     plugins: [{ id: 'response-healing' }]
                 }
-            });
+            })) as ChatResult;
 
             const content = response.choices?.[0]?.message?.content;
             if (!content) throw new Error('No content from OpenRouter');
