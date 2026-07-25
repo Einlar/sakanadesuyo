@@ -1,5 +1,6 @@
 <script lang="ts">
     import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+    import SectionMenu from '$lib/components/SectionMenu.svelte';
     import SettingsDialog from '$lib/components/SettingsDialog.svelte';
     import SyncIcon from '$lib/components/icons/SyncIcon.svelte';
     import { env } from '$env/dynamic/public';
@@ -29,10 +30,13 @@
                 Karaoke
             </a>
         {/if}
-        <div class="ml-auto flex items-center gap-3">
+        <div
+            class="ml-auto flex flex-wrap items-center justify-end gap-3 *:shrink-0"
+        >
             {#if rightContent}
                 {@render rightContent()}
             {/if}
+            <SectionMenu />
             {#if env.PUBLIC_ENABLE_SYNC === 'true'}
                 <a
                     href="/sync"
